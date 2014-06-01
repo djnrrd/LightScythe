@@ -1,0 +1,140 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Lightscythe by frak</title>
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script src="javascripts/respond.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <!--[if lt IE 8]>
+    <link rel="stylesheet" href="stylesheets/ie.css">
+    <![endif]-->
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+  </head>
+  <body>
+      <div id="header">
+        <nav>
+          <li class="fork"><a href="https://github.com/frak/LightScythe">View On GitHub</a></li>
+          <li class="downloads"><a href="https://github.com/frak/LightScythe/zipball/master">ZIP</a></li>
+          <li class="downloads"><a href="https://github.com/frak/LightScythe/tarball/master">TAR</a></li>
+          <li class="title">DOWNLOADS</li>
+        </nav>
+      </div><!-- end header -->
+
+    <div class="wrapper">
+
+      <section>
+        <div id="title">
+          <h1>Lightscythe</h1>
+          <p>My take on a Raspberry Pi Light Scythe Project</p>
+          <hr>
+          <span class="credits left">Project maintained by <a href="https://github.com/frak">frak</a></span>
+          <span class="credits right">Hosted on GitHub Pages &mdash; Theme by <a href="https://twitter.com/michigangraham">mattgraham</a></span>
+        </div>
+
+        <h1>
+<a name="lightscythe-v3" class="anchor" href="#lightscythe-v3"><span class="octicon octicon-link"></span></a>LightScythe v3</h1>
+
+<h2>
+<a name="credits" class="anchor" href="#credits"><span class="octicon octicon-link"></span></a>Credits</h2>
+
+<p>This project could not exist were it not for the work of <a href="https://sites.google.com/site/mechatronicsguy/lightscythe">The Mechatronics Guy</a>,
+<a href="https://sites.google.com/site/mechatronicsguy/lightscythe-v2">and his update</a>.  The work I am doing here is largely based on his list of
+improvements.  Credit also has to be given to <a href="https://learn.adafruit.com/light-painting-with-raspberry-pi">Adafruit</a> for their code and
+components - together, you guys have saved me a lot of hard work!</p>
+
+<h2>
+<a name="hardware" class="anchor" href="#hardware"><span class="octicon octicon-link"></span></a>Hardware</h2>
+
+<p>As I didn't want to get involved with wiring buttons directly to the GPIO pins on my Pi
+and it seemed that for images to be selected some form of display would be needed, I
+opted for the <a href="https://learn.adafruit.com/adafruit-16x2-character-lcd-plus-keypad-for-raspberry-pi">Adafruit 16x2 LCD plate with built in buttons</a>. Assembly was simple
+but it does require a certain level of dexterity with a soldering iron as there are many
+pins in a row that need to be soldered precisely.</p>
+
+<p>Of course, for the strip I used 2 metres of the <a href="https://learn.adafruit.com/digital-led-strip">Adafruit Digital LED Strip</a>, so
+I guess the next step for this is making the scythe itself. Oh, I do so love making things
+<code>&lt;/sarcasm&gt;</code></p>
+
+<p>But the star of the show is the <a href="http://www.raspberrypi.org/">Raspberry Pi</a> - I have done and intend to do so many
+things with this device. I run Raspbian, and for any of this to work you need to enable I2C
+(for the display and buttons) and SPI (for the light strip).  To do this you will first
+need to comment out the modules from the blacklist (/etc/modprobe.d/raspi-blacklist.conf):</p>
+
+<pre><code>#blacklist spi-bcm2708
+#blacklist i2c-bcm2708
+</code></pre>
+
+<p>And then you will need to enable the modules in /etc/modules:</p>
+
+<pre><code>snd-bcm2835
+i2c-bcm2708
+i2c-dev
+</code></pre>
+
+<p>In order to allow non-root access to the <a href="http://skpang.co.uk/blog/archives/575">I2C</a> and <a href="http://quick2wire.com/non-root-access-to-spi-on-the-pi/">SPI</a> pins:</p>
+
+<pre><code>sudo adduser pi i2c
+sudo groupadd -f --system spi
+sudo adduser pi spi  # This may say that pi is already a member of the group
+</code></pre>
+
+<p>You will then need to create <code>/etc/udev/rules.d/90-spi.rules</code> (as root) and add
+the following line:</p>
+
+<pre><code>SUBSYSTEM=="spidev", GROUP="spi"
+</code></pre>
+
+<p>Give the beast a reboot and she's good to go.  You should now be able to run the
+code without being root.</p>
+
+<h2>
+<a name="software" class="anchor" href="#software"><span class="octicon octicon-link"></span></a>Software</h2>
+
+<p>Well, this is what I have so far.  Despite my total lack of Python knowledge I seem
+to be doing OK. Everything seems to be it the right place, and I have got automatic
+image resizing, and I have hooked in the original image parsing code.  Once you have
+everything setup, you just need to run:</p>
+
+<pre><code>./Scythe.py
+</code></pre>
+
+<p>On the first run, it will create a settings.ini file in the project root which will expect
+the images to be found in /home/pi/images - if it cannot find either the directory or any
+images the script will terminate.  (You can of course change this to any other directory
+you would prefer to use, but you will need to run the Scythe once first to get the config
+file.)</p>
+
+<p>When it loads, any images found in that directly will be automatically resized to the
+correct height, and the resized image will be saved in a "preocessed" sub-directory. You 
+can also set the display colour and timeout here, using the colour constants found in 
+Adafruit_CharLCDPlate.py and any number in seconds for the timeout.</p>
+
+<p>There are many ways to get your Pi to run this script automatically on boot which you
+will need out in the field, however, the simplest option I found was to use crontab. 
+Just run <code>crontab -e</code> and add the following:</p>
+
+<pre><code>@reboot /home/pi/LightScythe/Scythe.py &amp;
+</code></pre>
+
+<h2>
+<a name="next-steps" class="anchor" href="#next-steps"><span class="octicon octicon-link"></span></a>Next Steps</h2>
+
+<p>Well, now I need some hardware - I have ordered some of the <a href="http://www.openbeamusa.com/">OpenBeams</a> that
+I need, and I am in contact with someone who should be able to do the laser cutting
+for me but the hardest part is going to be attaching the LCD plate to the Scythe. I
+am hoping I can work something out just using OpenBeam as I really don't want to get
+into designing custom parts...</p>
+      </section>
+
+    </div>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+    
+  </body>
+</html>
